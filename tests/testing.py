@@ -16,6 +16,5 @@ for rtn in fn2:
     exec('def %s(*args, **kwargs) : return np.testing.%s(*args, **kwargs)' % (rtn, rtn))
 
 
-
 if __name__ == '__main__':
     main()

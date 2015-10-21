@@ -11,10 +11,10 @@ from numpy import bool, int, float, complex, object, unicode, str, nan, inf
 def test():
     from os.path import split
     import unittest
-    test_loader= unittest.TestLoader()
+    test_loader = unittest.TestLoader()
     test_loader = test_loader.discover(split(__file__)[0])
     test_runner = unittest.TextTestRunner()
-    test_runner.run( test_loader )
+    test_runner.run(test_loader)
 
 
 demos = {}
@@ -34,7 +34,7 @@ import chumpy as ch
 [x1, x2, x3] = ch.array(10), ch.array(20), ch.array(30)
 for i in range(3): x2 = x1 + x2 + x3
 
-x2.dr_wrt(x1) # pull cache 
+x2.dr_wrt(x1) # pull cache
 x2.dr_wrt(x3) # pull cache
 x1.label='x1' # for clarity in show_tree()
 x2.label='x2' # for clarity in show_tree()
@@ -99,8 +99,6 @@ ch.minimize(objective, x0=[x,y], method='dogleg')
 print x # should be all 3.0
 print y # should be all 0.5
 """
-
-
 
 
 def demo(which=None):

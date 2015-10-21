@@ -7,8 +7,8 @@ See LICENCE.txt for licensing and contact information.
 """
 
 # Numpy functions
-__all__ = ['array', 'amax','amin', 'max', 'min', 'maximum','minimum','nanmax','nanmin',
-            'sum', 'exp', 'log', 'mean','std', 'var',
+__all__ = ['array', 'amax', 'amin', 'max', 'min', 'maximum', 'minimum', 'nanmax', 'nanmin',
+            'sum', 'exp', 'log', 'mean', 'std', 'var',
             'sin', 'cos', 'tan', 'arcsin', 'arccos', 'arctan',
             'sqrt', 'square', 'absolute', 'abs', 'clip',
             'power',
@@ -24,14 +24,14 @@ __all__ = ['array', 'amax','amin', 'max', 'min', 'maximum','minimum','nanmax','n
 
 __all__ += ['SumOfSquares',
            'NanDivide', ]
-           
+
 
 # These can be wrapped directly as Ch(routine(*args, **kwargs)),
 # so that for example "ch.eye(3)" translates into Ch(np.eye(3))
 numpy_array_creation_routines = [
-    'empty','empty_like','eye','identity','ones','ones_like','zeros','zeros_like',
+    'empty', 'empty_like', 'eye', 'identity', 'ones', 'ones_like', 'zeros', 'zeros_like',
     'array',
-    'arange','linspace','logspace','meshgrid','mgrid','ogrid',
+    'arange', 'linspace', 'logspace', 'meshgrid', 'mgrid', 'ogrid',
     'fromfunction', 'fromiter', 'meshgrid', 'tri'
 ]
 
@@ -42,8 +42,8 @@ not_yet_implemented = ['tril', 'triu', 'vander']
 __all__ += not_yet_implemented
 __all__ += wont_implement
 __all__ += numpy_array_creation_routines
-    
-    
+
+
 import ch
 import numpy as np
 import warnings
@@ -60,7 +60,7 @@ arange = np.arange
 for rtn in ['argmax', 'nanargmax', 'argmin', 'nanargmin']:
     exec('def %s(a, axis=None) : return np.%s(a.r, axis) if hasattr(a, "compute_r") else np.%s(a, axis)' % (rtn, rtn, rtn))
     __all__ += [rtn]
-    
+
 for rtn in ['argwhere', 'nonzero', 'flatnonzero']:
     exec('def %s(a) : return np.%s(a.r) if hasattr(a, "compute_r") else np.%s(a)' % (rtn, rtn, rtn))
     __all__ += [rtn]
@@ -74,7 +74,7 @@ class WontImplement(Exception):
 
 for rtn in wont_implement:
     exec('def %s(*args, **kwargs) : raise WontImplement' % (rtn))
-    
+
 for rtn in not_yet_implemented:
     exec('def %s(*args, **kwargs) : raise NotImplementedError' % (rtn))
 
@@ -92,14 +92,14 @@ def ascontiguousarray(a, dtype=None): return a
 asfarray = ascontiguousarray
 
 def copy(self):
-    return pickle.loads(pickle.dumps(self))    
+    return pickle.loads(pickle.dumps(self))
 
 def asfortranarray(a, dtype=None): raise WontImplement
 
 
 class Simpleton(ch.Ch):
-    dterms = 'x'    
-    def compute_dr_wrt(self, wrt): 
+    dterms = 'x'
+    def compute_dr_wrt(self, wrt):
         return None
 
 class floor(Simpleton):
@@ -115,28 +115,28 @@ class Cross(ch.Ch):
     dterms = 'a', 'b'
     terms = 'axisa', 'axisb', 'axisc', 'axis'
     term_order = 'a', 'b', 'axisa', 'axisb', 'axisc', 'axis'
-    
+
     def compute_r(self):
         return np.cross(self.a.r, self.b.r, self.axisa, self.axisb, self.axisc, self.axis)
-        
-    
+
+
     def _load_crossprod_cache(self, h, w):
         if not hasattr(self, '_w'):
             self._w = 0
             self._h = 0
 
-        if h!=self._h or w!=self._w:
-            sz = h*w
+        if h != self._h or w != self._w:
+            sz = h * w
             rng = np.arange(sz)
-            self._JS = np.repeat(rng.reshape((-1,w)), w, axis=0).ravel()
+            self._JS = np.repeat(rng.reshape((-1, w)), w, axis=0).ravel()
             self._IS = np.repeat(rng, w)
             self._tiled_identity = np.tile(np.eye(w), (h, 1))
             self._h = h
             self._w = w
-            
-        return self._tiled_identity, self._IS, self._JS, 
-            
-    
+
+        return self._tiled_identity, self._IS, self._JS,
+
+
 
     # Could be at least 2x faster, with some work
     def compute_dr_wrt(self, wrt):
@@ -146,17 +146,17 @@ class Cross(ch.Ch):
         sz = self.a.size
         h, w = self.a.shape
         tiled_identity, IS, JS = self._load_crossprod_cache(h, w)
-        
+
         #import time
         #tm = time.time()
         if wrt is self.a:
-            rp = np.repeat(-self.b.r, w, axis=0) 
+            rp = np.repeat(-self.b.r, w, axis=0)
             result = np.cross(
-                tiled_identity, 
+                tiled_identity,
                 rp,
                 self.axisa,
-                self.axisb, 
-                self.axisc, 
+                self.axisb,
+                self.axisc,
                 self.axis)
 
         elif wrt is self.b:
@@ -164,22 +164,22 @@ class Cross(ch.Ch):
                 np.repeat(-self.a.r, w, axis=0),
                 tiled_identity,
                 self.axisa,
-                self.axisb, 
-                self.axisc, 
+                self.axisb,
+                self.axisc,
                 self.axis)
-                
+
         # rng = np.arange(sz)
         # JS = np.repeat(rng.reshape((-1,w)), w, axis=0).ravel()
         # IS = np.repeat(rng, w)
         data = result.ravel()
-        result = sp.csc_matrix((data, (IS,JS)), shape=(self.size, wrt.size))
+        result = sp.csc_matrix((data, (IS, JS)), shape=(self.size, wrt.size))
         #import pdb; pdb.set_trace()
         #print 'B TOOK %es' % (time.time() -tm )
         return result
-    
+
 def cross(a, b, axisa=-1, axisb=-1, axisc=-1, axis=None):
     return Cross(a, b, axisa, axisb, axisc, axis)
-    
+
 
 
 
@@ -187,21 +187,21 @@ class cumsum(ch.Ch):
     dterms = 'a'
     terms = 'axis'
     term_order = 'a', 'axis'
-    
+
     def on_changed(self, which):
         if not hasattr(self, 'axis'):
             self.axis = None
-    
+
     def compute_r(self):
         return np.cumsum(self.a.r, axis=self.axis)
-        
+
     def compute_dr_wrt(self, wrt):
         if wrt is not self.a:
             return None
-        
+
         if self.axis is not None:
             raise NotImplementedError
-            
+
         IS = np.tile(row(np.arange(self.a.size)), (self.a.size, 1))
         JS = IS.T
         IS = IS.ravel()
@@ -212,18 +212,18 @@ class cumsum(ch.Ch):
         data = np.ones_like(IS)
         result = sp.csc_matrix((data, (IS, JS)), shape=(self.a.size, self.a.size))
         return result
-            
+
 
 class UnaryElemwise(ch.Ch):
     dterms = 'x'
-    
+
     def compute_r(self):
         return self._r(self.x.r)
-    
+
     def compute_dr_wrt(self, wrt):
         if wrt is self.x:
             result = self._d(self.x.r)
-            return sp.diags([result.ravel()], [0]) if len(result)>1 else np.atleast_2d(result)
+            return sp.diags([result.ravel()], [0]) if len(result) > 1 else np.atleast_2d(result)
 
 
 class nan_to_num(UnaryElemwise):
@@ -232,7 +232,7 @@ class nan_to_num(UnaryElemwise):
 
 class reciprocal(UnaryElemwise):
     _r = np.reciprocal
-    _d = lambda self, x : -np.reciprocal(np.square(x))
+    _d = lambda self, x :-np.reciprocal(np.square(x))
 
 class square(UnaryElemwise):
     _r = np.square
@@ -240,7 +240,7 @@ class square(UnaryElemwise):
 
 def my_power(a, b):
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore",category=RuntimeWarning)
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
         return np.nan_to_num(np.power(a, b))
 
 class sqrt(UnaryElemwise):
@@ -249,7 +249,7 @@ class sqrt(UnaryElemwise):
 
 class exp(UnaryElemwise):
     _r = np.exp
-    _d = np.exp    
+    _d = np.exp
 
 class log(UnaryElemwise):
     _r = np.log
@@ -258,34 +258,34 @@ class log(UnaryElemwise):
 class sin(UnaryElemwise):
     _r = np.sin
     _d = np.cos
-    
+
 class arcsin(UnaryElemwise):
     _r = np.arcsin
-    _d = lambda self, x : np.reciprocal(np.sqrt(1.-np.square(x)))
-    
+    _d = lambda self, x : np.reciprocal(np.sqrt(1. - np.square(x)))
+
 class cos(UnaryElemwise):
     _r = np.cos
-    _d = lambda self, x : -np.sin(x)
+    _d = lambda self, x :-np.sin(x)
 
 class arccos(UnaryElemwise):
     _r = np.arccos
-    _d = lambda self, x : -np.reciprocal(np.sqrt(1.-np.square(x)))
+    _d = lambda self, x :-np.reciprocal(np.sqrt(1. - np.square(x)))
 
 class tan(UnaryElemwise):
     _r = np.tan
-    _d = lambda self, x : np.reciprocal(np.cos(x)**2.)
-    
+    _d = lambda self, x : np.reciprocal(np.cos(x) ** 2.)
+
 class arctan(UnaryElemwise):
     _r = np.arctan
-    _d = lambda self, x : np.reciprocal(np.square(x)+1.)
-    
+    _d = lambda self, x : np.reciprocal(np.square(x) + 1.)
+
 class negative(UnaryElemwise):
     _r = np.negative
     _d = lambda self, x : np.negative(np.ones_like(x))
 
 class absolute(UnaryElemwise):
     _r = np.abs
-    _d = lambda self, x : (x>0)*2-1.
+    _d = lambda self, x : (x > 0) * 2 - 1.
 
 abs = absolute
 
@@ -293,20 +293,20 @@ class clip(ch.Ch):
     dterms = 'a'
     terms = 'a_min', 'a_max'
     term_order = 'a', 'a_min', 'a_max'
-    
+
     def compute_r(self):
         return np.clip(self.a.r, self.a_min, self.a_max)
-    
+
     def compute_dr_wrt(self, wrt):
         if wrt is self.a:
             result = np.asarray((self.r != self.a_min) & (self.r != self.a_max), np.float64)
-            return sp.diags([result.ravel()], [0]) if len(result)>1 else np.atleast_2d(result)
+            return sp.diags([result.ravel()], [0]) if len(result) > 1 else np.atleast_2d(result)
 
 class sum(ch.Ch):
     dterms = 'x',
-    terms  = 'axis',
+    terms = 'axis',
     term_order = 'x', 'axis'
-    
+
     def on_changed(self, which):
         if not hasattr(self, 'axis'):
             self.axis = None
@@ -334,13 +334,13 @@ class sum(ch.Ch):
                 result = sp.csc_matrix((data, (idxs_postsum.ravel(), idxs_presum.ravel())), (self.r.size, wrt.size))
                 self.dr_cache[uid] = result
             return self.dr_cache[uid]
-            
+
 
 class mean(ch.Ch):
     dterms = 'x',
-    terms  = 'axis',
+    terms = 'axis',
     term_order = 'x', 'axis'
-    
+
     def on_changed(self, which):
         if not hasattr(self, 'axis'):
             self.axis = None
@@ -354,7 +354,7 @@ class mean(ch.Ch):
         if wrt is not self.x:
             return
         if self.axis == None:
-            return row(np.ones((1, len(self.x.r))))/len(self.x.r)
+            return row(np.ones((1, len(self.x.r)))) / len(self.x.r)
         else:
             uid = tuple(list(self.x.shape) + [self.axis])
             if uid not in self.dr_cache:
@@ -373,25 +373,25 @@ class mean(ch.Ch):
 def var(a, axis=None, dtype=None, out=None, ddof=0, keepdims=False):
     if (dtype != None or out != None or ddof != 0 or keepdims != False):
         raise NotImplementedException('Unimplemented for non-default dtype, out, ddof, and keepdims.')
-    return mean(a**2., axis=axis)
-    
+    return mean(a ** 2., axis=axis)
+
 def std(a, axis=None, dtype=None, out=None, ddof=0, keepdims=False):
     if (dtype != None or out != None or ddof != 0 or keepdims != False):
         raise NotImplementedException('Unimplemented for non-default dtype, out, ddof, and keepdims.')
     return sqrt(var(a, axis=axis))
-    
+
 
 class SumOfSquares(ch.Ch):
     dterms = 'x',
 
     def compute_r(self):
-        return np.sum(self.x.r.ravel()**2.)
+        return np.sum(self.x.r.ravel() ** 2.)
 
     def compute_dr_wrt(self, wrt):
         if wrt is self.x:
-            return row(self.x.r.ravel()*2.)
-    
-    
+            return row(self.x.r.ravel() * 2.)
+
+
 class divide (ch.Ch):
     dterms = 'x1', 'x2'
 
@@ -399,26 +399,26 @@ class divide (ch.Ch):
         return self.x1.r / self.x2.r
 
     def compute_dr_wrt(self, wrt):
-        
+
         if (wrt is self.x1) == (wrt is self.x2):
             return None
-            
+
         IS, JS, input_sz, output_sz = _broadcast_setup(self.x1, self.x2, wrt)
-        
+
         x1r, x2r = self.x1.r, self.x2.r
         if wrt is self.x1:
             data = (np.ones_like(x1r) / x2r).ravel()
         else:
-            data = (-x1r / (x2r*x2r)).ravel()
-            
+            data = (-x1r / (x2r * x2r)).ravel()
+
         return sp.csc_matrix((data, (IS, JS)), shape=(self.r.size, wrt.r.size))
 
 
-            
+
 
 class NanDivide(divide):
     dterms = 'x1', 'x2'
-    
+
     def compute_r(self):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -428,11 +428,11 @@ class NanDivide(divide):
         result[np.isinf(result)] = 0
         result[np.isnan(result)] = 0
         return result.reshape(shape)
-        
+
     def compute_dr_wrt(self, wrt):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            result = super(self.__class__, self).compute_dr_wrt(wrt)        
+            result = super(self.__class__, self).compute_dr_wrt(wrt)
         if result is not None:
             result = result.copy()
             if sp.issparse(result):
@@ -447,7 +447,7 @@ class NanDivide(divide):
 
 
 def shape(a):
-    return a.shape if hasattr(a, 'shape') else np.shape(a)    
+    return a.shape if hasattr(a, 'shape') else np.shape(a)
 
 
 _bs_setup_data1 = {}
@@ -464,7 +464,7 @@ def _broadcast_matrix(a, b, wrt, data):
         result = copy_copy(_bs_setup_data1[uid])
         if isinstance(data, np.ndarray):
             result.data = data.ravel()
-        else: # assumed scalar
+        else:  # assumed scalar
             result.data = np.empty(result.nnz)
             result.data.fill(data)
     else:
@@ -475,14 +475,14 @@ def _broadcast_matrix(a, b, wrt, data):
             a2 = np.arange(a.size).reshape(a.shape) if wrt is a else np.zeros(a.shape)
             b2 = np.arange(b.size).reshape(b.shape) if (wrt is b and wrt is not a) else np.zeros(b.shape)
             IS = np.arange(output_sz)
-            JS = np.asarray((np.add(a2,b2)).ravel(), np.uint32)
+            JS = np.asarray((np.add(a2, b2)).ravel(), np.uint32)
 
             _bs_setup_data2[uid] = sp.csc_matrix((np.arange(IS.size), (IS, JS)), shape=(output_sz, input_sz))
 
         result = copy_copy(_bs_setup_data2[uid])
         if isinstance(data, np.ndarray):
             result.data = data[result.data]
-        else: # assumed scalar
+        else:  # assumed scalar
             result.data = np.empty(result.nnz)
             result.data.fill(data)
 
@@ -534,16 +534,16 @@ def _broadcast_setup(a, b, wrt):
     input_sz = wrt.r.size
     output_sz = np.broadcast(a.r, b.r).size
     a2 = np.arange(a.size).reshape(a.shape) if wrt is a else np.zeros(a.shape)
-    b2 = np.arange(b.size).reshape(b.shape) if (wrt is b and wrt is not a) else np.zeros(b.shape)    
+    b2 = np.arange(b.size).reshape(b.shape) if (wrt is b and wrt is not a) else np.zeros(b.shape)
     IS = np.arange(output_sz)
-    JS = np.asarray((np.add(a2,b2)).ravel(), np.uint32)
+    JS = np.asarray((np.add(a2, b2)).ravel(), np.uint32)
     return IS, JS, input_sz, output_sz
 
 
-  
+
 class add(ch.Ch):
     dterms = 'a', 'b'
-        
+
     def compute_r(self):
         return self.a.r + self.b.r
 
@@ -555,8 +555,8 @@ class add(ch.Ch):
         return _broadcast_matrix(self.a, self.b, wrt, m)
 
 
-            
-            
+
+
 class subtract(ch.Ch):
     dterms = 'a', 'b'
 
@@ -571,9 +571,9 @@ class subtract(ch.Ch):
         return _broadcast_matrix(self.a, self.b, wrt, m)
 
 
-    
-    
-    
+
+
+
 class power (ch.Ch):
     """Given vector \f$x\f$, computes \f$x^2\f$ and \f$\frac{dx^2}{x}\f$"""
     dterms = 'x', 'pow'
@@ -585,19 +585,19 @@ class power (ch.Ch):
 
         if wrt is not self.x and wrt is not self.pow:
             return None
-            
+
         x, pow = self.x.r, self.pow.r
         result = []
         if wrt is self.x:
-            result.append(pow * self.safe_power(x, pow-1.))
+            result.append(pow * self.safe_power(x, pow - 1.))
         if wrt is self.pow:
             result.append(np.log(x) * self.safe_power(x, pow))
-            
+
         data = reduce(lambda x, y : x + y, result).ravel()
 
         return _broadcast_matrix(self.x, self.pow, wrt, data)
 
-    
+
     def safe_power(self, x, sigma):
         # This throws a RuntimeWarning sometimes, but then the infs are corrected below
         result = np.power(x, sigma)
@@ -606,7 +606,7 @@ class power (ch.Ch):
 
 
 
-        
+
 
 class A_extremum(ch.Ch):
     """Superclass for various min and max subclasses"""
@@ -620,10 +620,10 @@ class A_extremum(ch.Ch):
     def on_changed(self, which):
         if not hasattr(self, 'axis'):
             self.axis = None
-    
-    def compute_r(self):        
+
+    def compute_r(self):
         return self.f(self.a.r, axis=self.axis)
-    
+
     def compute_dr_wrt(self, wrt):
         if wrt is self.a:
 
@@ -631,22 +631,22 @@ class A_extremum(ch.Ch):
             JS = np.asarray(np.round(mn + stride * self.argf(self.a.r, axis=self.axis)), dtype=np.uint32).ravel()
             IS = np.arange(JS.size)
             data = np.ones(JS.size)
-            
+
             if self.r.size * wrt.r.size == 1:
                 return data.ravel()[0]
-            return sp.csc_matrix((data, (IS, JS)), shape = (self.r.size, wrt.r.size))
-            
-    def _stride_for_axis(self,axis, mtx):
+            return sp.csc_matrix((data, (IS, JS)), shape=(self.r.size, wrt.r.size))
+
+    def _stride_for_axis(self, axis, mtx):
         if axis is None:
             mn = np.array([0])
             stride = np.array([1])
-        else:    
+        else:
             # TODO: make this less expensive. Shouldn't need to call
             # np.amin here probably
             idxs = np.arange(mtx.size).reshape(mtx.shape)
             mn = np.amin(idxs, axis=axis)
             stride = np.array(mtx.strides)
-            stride /= np.min(stride) # go from bytes to num elements
+            stride /= np.min(stride)  # go from bytes to num elements
             stride = stride[axis]
         return mn, stride
 
@@ -654,8 +654,8 @@ class A_extremum(ch.Ch):
 class amax(A_extremum):
     def f(self, *args, **kwargs):    return np.amax(*args, **kwargs)
     def argf(self, *args, **kwargs): return np.argmax(*args, **kwargs)
-    
-max = amax    
+
+max = amax
 
 class amin(A_extremum):
     def f(self, *args, **kwargs):    return np.amin(*args, **kwargs)
@@ -670,31 +670,31 @@ class nanmin(A_extremum):
 class nanmax(A_extremum):
     def f(self, *args, **kwargs):    return np.nanmax(*args, **kwargs)
     def argf(self, *args, **kwargs): return np.nanargmax(*args, **kwargs)
-    
+
 
 class Extremum(ch.Ch):
-    dterms = 'a','b'
-    
+    dterms = 'a', 'b'
+
     def compute_r(self): return self.f(self.a.r, self.b.r)
-    
+
     def compute_dr_wrt(self, wrt):
         if wrt is not self.a and wrt is not self.b:
             return None
-                
+
         IS, JS, input_sz, output_sz = _broadcast_setup(self.a, self.b, wrt)
         if wrt is self.a:
-            whichmax = (self.r == self.f(self.a.r, self.b.r-self.f(1,-1))).ravel()
+            whichmax = (self.r == self.f(self.a.r, self.b.r - self.f(1, -1))).ravel()
         else:
-            whichmax = (self.r == self.f(self.b.r, self.a.r-self.f(1,-1))).ravel()
+            whichmax = (self.r == self.f(self.b.r, self.a.r - self.f(1, -1))).ravel()
         IS = IS[whichmax]
         JS = JS[whichmax]
         data = np.ones(JS.size)
-        
+
         return sp.csc_matrix((data, (IS, JS)), shape=(self.r.size, wrt.r.size))
 
 class maximum(Extremum):
     def f(self, a, b): return np.maximum(a, b)
-    
+
 class minimum(Extremum):
     def f(self, a, b): return np.minimum(a, b)
 
@@ -708,20 +708,20 @@ class multiply(ch.Ch):
     def compute_dr_wrt(self, wrt):
         if wrt is not self.a and wrt is not self.b:
             return None
-        
+
         a2 = self.a.r if wrt is self.b else np.ones(self.a.shape)
         b2 = self.b.r if (wrt is self.a and wrt is not self.b) else np.ones(self.b.shape)
         data = (a2 * b2).ravel()
-        
+
         if self.a is self.b:
             data *= 2.
 
         return _broadcast_matrix(self.a, self.b, wrt, data)
 
 
-        
-                
-        
+
+
+
 class dot(ch.Ch):
     dterms = 'a', 'b'
 
@@ -730,31 +730,31 @@ class dot(ch.Ch):
             return self.a.r.dot(self.b.r)
         except:
             import pdb; pdb.set_trace()
-    
+
     def compute_d1(self):
         # To stay consistent with numpy, we must upgrade 1D arrays to 2D
-        ar = row(self.a.r) if len(self.a.r.shape)<2 else self.a.r.reshape((-1, self.a.r.shape[-1]))
-        br = col(self.b.r) if len(self.b.r.shape)<2 else self.b.r.reshape((self.b.r.shape[0], -1))
+        ar = row(self.a.r) if len(self.a.r.shape) < 2 else self.a.r.reshape((-1, self.a.r.shape[-1]))
+        br = col(self.b.r) if len(self.b.r.shape) < 2 else self.b.r.reshape((self.b.r.shape[0], -1))
 
         if ar.ndim <= 2:
-            return sp.kron(sp.eye(ar.shape[0], ar.shape[0]),br.T)
+            return sp.kron(sp.eye(ar.shape[0], ar.shape[0]), br.T)
         else:
             raise NotImplementedError
 
     def compute_d2(self):
-        
+
         # To stay consistent with numpy, we must upgrade 1D arrays to 2D
-        ar = row(self.a.r) if len(self.a.r.shape)<2 else self.a.r.reshape((-1, self.a.r.shape[-1]))
-        br = col(self.b.r) if len(self.b.r.shape)<2 else self.b.r.reshape((self.b.r.shape[0], -1))
+        ar = row(self.a.r) if len(self.a.r.shape) < 2 else self.a.r.reshape((-1, self.a.r.shape[-1]))
+        br = col(self.b.r) if len(self.b.r.shape) < 2 else self.b.r.reshape((self.b.r.shape[0], -1))
 
         if br.ndim <= 1:
             return self.ar
         elif br.ndim <= 2:
-            return sp.kron(ar, sp.eye(br.shape[1],br.shape[1]))
+            return sp.kron(ar, sp.eye(br.shape[1], br.shape[1]))
         else:
             raise NotImplementedError
-            
-    
+
+
     def compute_dr_wrt(self, wrt):
 
         if wrt is self.a and wrt is self.b:
@@ -763,34 +763,34 @@ class dot(ch.Ch):
             return self.compute_d1()
         elif wrt is self.b:
             return self.compute_d2()
-        
+
 class BinaryElemwiseNoDrv(ch.Ch):
     dterms = 'x1', 'x2'
-    
+
     def compute_r(self):
         return self._f(self.x1.r, self.x2.r)
-    
+
     def compute_dr_wrt(self, wrt):
         return None
-    
+
 class greater(BinaryElemwiseNoDrv):
-    def _f(self, a, b): return np.greater(a,b)
+    def _f(self, a, b): return np.greater(a, b)
 
 class greater_equal(BinaryElemwiseNoDrv):
-    def _f(self, a, b): return np.greater_equal(a,b)
+    def _f(self, a, b): return np.greater_equal(a, b)
 
 class less(BinaryElemwiseNoDrv):
-    def _f(self, a, b): return np.less(a,b)
+    def _f(self, a, b): return np.less(a, b)
 
 class less_equal(BinaryElemwiseNoDrv):
-    def _f(self, a, b): return np.less_equal(a,b)
-    
+    def _f(self, a, b): return np.less_equal(a, b)
+
 class equal(BinaryElemwiseNoDrv):
-    def _f(self, a, b): return np.equal(a,b)
+    def _f(self, a, b): return np.equal(a, b)
 
 class not_equal(BinaryElemwiseNoDrv):
-    def _f(self, a, b): return np.not_equal(a,b)
-    
+    def _f(self, a, b): return np.not_equal(a, b)
+
 def nonzero(a):
     if hasattr(a, 'compute_r'):
         a = a.r
@@ -801,7 +801,7 @@ try:
     exec(''.join(inspect.getsourcelines(np.tensordot)[0]))
 except: pass
 
-    
+
 
 
 def main():
