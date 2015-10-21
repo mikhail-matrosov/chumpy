@@ -4,7 +4,6 @@ See LICENCE.txt for licensing and contact information.
 
 __all__ = ['minimize']
 
-import time
 import math
 import sys
 import time
@@ -78,7 +77,6 @@ def minimize(fun, x0, method='dogleg', bounds=None, constraints=(), tol=None, ca
                 hessp.H = 2. * J.T.dot(J)
                 hessp.vs = vs
             return np.array(hessp.H.dot(p)).ravel()
-            #return 2*np.array(hessp.J.T.dot(hessp.J.dot(p))).ravel()
 
         if method.lower() != 'newton-cg':
             def hess(vs, obj, obj_scalar, free_variables):
