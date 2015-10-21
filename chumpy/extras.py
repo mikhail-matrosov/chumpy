@@ -1,4 +1,3 @@
-__author__ = 'matt'
 
 import ch
 import numpy as np
@@ -17,9 +16,9 @@ class Interp3D(ch.Ch):
     def compute_r(self):
         locations = self.locations.r.copy()
         for i in range(3):
-            locations[:,i] = np.clip(locations[:,i], 0, self.image.shape[i]-1)
+            locations[:, i] = np.clip(locations[:, i], 0, self.image.shape[i] - 1)
         locs = np.floor(locations).astype(np.uint32)
-        result = self.image[locs[:,0], locs[:,1], locs[:,2]]
+        result = self.image[locs[:, 0], locs[:, 1], locs[:, 2]]
         offset = (locations - locs)
         dr = self.dr_wrt(self.locations).dot(offset.ravel())
         return result + dr
@@ -28,12 +27,12 @@ class Interp3D(ch.Ch):
         if wrt is self.locations:
             locations = self.locations.r.copy()
             for i in range(3):
-                locations[:,i] = np.clip(locations[:,i], 0, self.image.shape[i]-1)
+                locations[:, i] = np.clip(locations[:, i], 0, self.image.shape[i] - 1)
             locations = locations.astype(np.uint32)
 
-            xc = col(self.gx[locations[:,0], locations[:,1], locations[:,2]])
-            yc = col(self.gy[locations[:,0], locations[:,1], locations[:,2]])
-            zc = col(self.gz[locations[:,0], locations[:,1], locations[:,2]])
+            xc = col(self.gx[locations[:, 0], locations[:, 1], locations[:, 2]])
+            yc = col(self.gy[locations[:, 0], locations[:, 1], locations[:, 2]])
+            zc = col(self.gz[locations[:, 0], locations[:, 1], locations[:, 2]])
 
             data = np.vstack([xc.ravel(), yc.ravel(), zc.ravel()]).T.copy()
             JS = np.arange(locations.size)
@@ -50,7 +49,7 @@ class gamma(ch.Ch):
 
     def compute_dr_wrt(self, wrt):
         if wrt is self.x:
-            d = scipy.special.polygamma(0, self.x.r)*self.r
+            d = scipy.special.polygamma(0, self.x.r) * self.r
             return sp.diags([d.ravel()], [0])
 
 # This function is based directly on the "moment" function
@@ -68,5 +67,5 @@ def moment(a, moment=1, axis=0):
             return np.float64(0.0)
     else:
         mn = ch.expand_dims(a.mean(axis=axis), axis)
-        s = ch.power((a-mn), moment)
+        s = ch.power((a - mn), moment)
         return s.mean(axis=axis)
