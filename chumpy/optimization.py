@@ -2,8 +2,6 @@
 See LICENCE.txt for licensing and contact information.
 """
 
-__all__ = ['minimize']
-
 import math
 import sys
 import time
@@ -11,14 +9,14 @@ import numpy as np
 from numpy.linalg import norm
 
 import ch
-import utils
-
 from .utils import row, col
 
 import scipy.sparse as sp
 import scipy.sparse
 import scipy.optimize
 from scipy.sparse.linalg.interface import LinearOperator
+
+__all__ = ['minimize']
 
 
 def vstack(x):
@@ -43,7 +41,14 @@ def hstack(x):
 # SLSQP
 # dogleg
 # trust-ncg
-def minimize(fun, x0, method='dogleg', bounds=None, constraints=(), tol=None, callback=None, options=None):
+def minimize(fun,
+             x0,
+             method='dogleg',
+             bounds=None,
+             constraints=(),
+             tol=None,
+             callback=None,
+             options=None):
 
     if method == 'dogleg':
         if options is None:
@@ -57,7 +62,7 @@ def minimize(fun, x0, method='dogleg', bounds=None, constraints=(), tol=None, ca
     obj = fun
     free_variables = x0
 
-    from .ch import SumOfSquares
+    from .ch_ops import SumOfSquares
 
     hessp = None
     hess = None
@@ -146,7 +151,6 @@ def minimize(fun, x0, method='dogleg', bounds=None, constraints=(), tol=None, ca
         ns_jacfunc.vs = vs
         return result
 
-
     x1 = scipy.optimize.minimize(
         method=method,
         fun=residuals,
@@ -161,6 +165,8 @@ def minimize(fun, x0, method='dogleg', bounds=None, constraints=(), tol=None, ca
 
 
 _giter = 0
+
+
 class ChInputsStacked(ch.Ch):
     dterms = 'x', 'obj'
     terms = 'free_variables'
@@ -185,7 +191,6 @@ class ChInputsStacked(ch.Ch):
                 else:
                     mtxs.append(self.obj.dr_wrt(freevar))
             return hstack(mtxs)
-            #return hstack([self.obj.dr_wrt(freevar) for freevar in self.free_variables])
 
     def on_changed(self, which):
         global _giter
@@ -211,7 +216,6 @@ class ChInputsStacked(ch.Ch):
                 #self.free_variables[idx] = self.obj.replace(freevar, Ch(self.x.r[rng].copy()))
                 pos += sz
 
-
     @property
     def J(self):
         result = self.dr_wrt(self.x).copy()
@@ -230,7 +234,7 @@ class ChInputsStacked(ch.Ch):
         else:
             Js = [self.obj.dr_wrt(freevar) for freevar in self.free_variables]
             zeroArray = [None] * len(Js)
-            A = [zeroArray[:] for i in range(len(Js))]
+            A = [zeroArray[:] for _ in range(len(Js))]
             for y in range(len(Js)):
                 for x in range(len(Js)):
                     if y > x:
@@ -260,7 +264,6 @@ def _minimize_dogleg(obj, free_variables, on_step=None,
 
     import warnings
     if show_residuals is not None:
-        import warnings
         warnings.warn('minimize_dogleg: show_residuals parm is deprecaed, pass a dict instead.')
 
     labels = {}
@@ -269,7 +272,6 @@ def _minimize_dogleg(obj, free_variables, on_step=None,
     elif isinstance(obj, dict):
         labels = obj
         obj = ch.concatenate([f.ravel() for f in obj.values()])
-
 
     niters = maxiter
     verbose = disp
@@ -340,7 +342,7 @@ def _minimize_dogleg(obj, free_variables, on_step=None,
     while (not stop) and (k < k_max) and (fevals < max_fevals):
         k += 1
         pif('beginning iteration %d' % (k,))
-        d_sd = col((sqnorm(g)) / (sqnorm (J.dot(g))) * g)
+        d_sd = col((sqnorm(g)) / (sqnorm(J.dot(g))) * g)
         GNcomputed = False
 
         while True:
@@ -442,8 +444,8 @@ def _minimize_dogleg(obj, free_variables, on_step=None,
                         stop = True
                         pif('stopping because improvement < %.1e%%' % (100 * e_3,))
 
-
-                else:  # Put the old parms back
+                else:
+                    # Put the old parms back
                     obj.x = ch.Ch(p)
                     obj.on_changed('x')  # copies from flat vector to free variables
 
@@ -492,6 +494,7 @@ def _minimize_dogleg(obj, free_variables, on_step=None,
 def sqnorm(a):
     return norm(a) ** 2
 
+
 def updateRadius(rho, delta, d_dl, lb=.05, ub=.9):
     if rho > ub:
         delta = max(delta, 2.5 * norm(d_dl))
@@ -511,12 +514,3 @@ def predicted_improvement(d, e, J, sqnorm_e, JTJ, JTe):
     cc = c1.dot(c2.dot(c3))
     result = 2. * (aa - bb + cc)[0, 0]
     return sqnorm_e - result
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
-

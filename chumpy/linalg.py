@@ -14,9 +14,6 @@ Contains Chumpy versions of linear function.
 
 # See LICENCE.txt for licensing and contact information.
 
-
-__all__ = ['inv', 'svd', 'det', 'slogdet', 'pinv', 'lstsq', 'norm']
-
 import numpy as np
 import scipy.sparse as sp
 
@@ -24,6 +21,7 @@ from .ch import Ch, depends_on, NanDivide
 from utils import row, col
 import ch
 
+__all__ = ['inv', 'svd', 'det', 'slogdet', 'pinv', 'lstsq', 'norm']
 
 try:
     asarray = ch.asarray
@@ -270,6 +268,7 @@ svd = Svd
 det = Det
 pinv = Pinv
 
+
 def slogdet(*args):
     n = len(args)
     if n == 1:
@@ -281,6 +280,7 @@ def slogdet(*args):
         r1 = [SignLogAbsDet(r) for r in r2]
         r2 = ch.concatenate(r2)
         return r1, r2
+
 
 def main():
 
