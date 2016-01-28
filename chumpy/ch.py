@@ -9,9 +9,6 @@ This file contains the main chumpy class that is used to create new derivable ob
 
 # See LICENCE.txt for licensing and contact information.
 
-
-__all__ = ['Ch', 'depends_on', 'MatVecMult', 'ChHandle', 'ChLambda']
-
 import sys
 import inspect
 import scipy.sparse as sp
@@ -26,6 +23,9 @@ import collections
 from copy import deepcopy
 
 from .utils import row, col
+
+__all__ = ['Ch', 'depends_on', 'MatVecMult', 'ChHandle', 'ChLambda']
+
 
 _props_for_dict = weakref.WeakKeyDictionary()
 def _props_for(cls):
@@ -202,7 +202,7 @@ class Ch(object):
 
     def remove_redundancy(self, cache=None, iterate=True):
 
-        if cache == None:
+        if cache is None:
             cache = {}
             _ = self.r  # may result in the creation of extra dterms that we can cull
 
@@ -230,8 +230,6 @@ class Ch(object):
             else:
                 return True
 
-
-
     def print_labeled_residuals(self, print_newline=True, num_decimals=2, where_to_print=None):
 
         if where_to_print is None:
@@ -245,10 +243,9 @@ class Ch(object):
         if print_newline:
             where_to_print.write(('%.' + str(num_decimals) + 'e\n') % (np.sum(self.r ** 2),))
 
-
-
-    ########################################################
+    #
     # Default methods, for when Ch is not subclassed
+    #
 
     def compute_r(self):
         """Default method for objects that just contain a number or ndarray"""
@@ -258,9 +255,7 @@ class Ch(object):
         """Default method for objects that just contain a number or ndarray"""
         if wrt is self:  # special base case
             return sp.eye(self.x.size, self.x.size)
-            #return np.array([[1]])
         return None
-
 
     def _compute_dr_wrt_sliced(self, wrt):
         self._call_on_changed()
@@ -291,11 +286,10 @@ class Ch(object):
 
             try:
                 jac = wrt.compute_dr_wrt(inner).T
-            except Exception as e:
+            except Exception, _:
                 import pdb; pdb.set_trace()
 
             return self._superdot(result, jac)
-
 
     @property
     def shape(self):
@@ -303,7 +297,6 @@ class Ch(object):
 
     @property
     def size(self):
-        #return self.r.size
         return np.prod(self.shape)  # may be cheaper since it doesn't always mean grabbing "r"
 
     def __len__(self):
@@ -976,7 +969,6 @@ def depends_on(*dependencies):
     return _depends_on
 
 
-
 class ChHandle(Ch):
     dterms = ('x',)
 
@@ -1020,7 +1012,6 @@ class ChLambda(Ch):
             self.lmb = None
         return super(self.__class__, self).__getstate__()
 
-
     def compute_r(self):
         return self._result.r
 
@@ -1041,10 +1032,6 @@ __all__ += reordering.__all__
 import linalg
 import ch_random as random
 __all__ += ['linalg', 'random']
-
-
-
-
 
 class tst(Ch):
     dterms = ['a', 'b', 'c']
