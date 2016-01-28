@@ -46,7 +46,7 @@ def _check_kw_conflict(cls):
     if cls not in _kw_conflict_dict:
         _kw_conflict_dict[cls] = Ch._reserved_kw.intersection(set(cls.terms).union(set(cls.dterms)))
     if _kw_conflict_dict[cls]:
-        raise Exception("In class %s, don't use reserved keywords in terms/dterms: %s" % (str(cls), str(kw_conflict),))
+        raise Exception("In class %s, don't use reserved keywords in terms/dterms: %s" % (str(cls), str(_kw_conflict_dict),))
 
 
 class Term(object):
