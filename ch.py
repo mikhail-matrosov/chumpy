@@ -29,7 +29,7 @@ def _props_for(cls):
         _props_for_dict[cls] = set([p[0] for p in inspect.getmembers(cls, lambda x : isinstance(x, property))])
     return _props_for_dict[cls]
 
-_dep_props_for_dict = weakref.WeakKeyDictionary()      
+_dep_props_for_dict = weakref.WeakKeyDictionary()
 def _dep_props_for(cls):
     if cls not in _dep_props_for_dict:
         _dep_props_for_dict[cls] = [p for p in inspect.getmembers(cls, lambda x : isinstance(x, property)) if hasattr(p[1].fget, 'deps')]
@@ -588,7 +588,8 @@ class Ch(object):
                 return rhs.T.dot(lhs.T).T
     
             return lhs.dot(rhs)
-        except:
+        except Exception as e:
+            print(e)
             import pdb; pdb.set_trace()
             
     def lmult_wrt(self, lhs, wrt):
@@ -609,7 +610,7 @@ class Ch(object):
 
             if hasattr(p, 'dterms') and p is not wrt and p.is_dr_wrt(wrt):
                 if not isinstance(p, Ch):
-                    print 'BROKEN!'
+                    print ('BROKEN!')
                     import pdb; pdb.set_trace()
 
                 indirect_dr = p.lmult_wrt(self._superdot(lhs, self._compute_dr_wrt_sliced(p)), wrt)
@@ -670,7 +671,6 @@ class Ch(object):
     def compute_rop(self, wrt, rhs):
         dr = self._compute_dr_wrt_sliced(wrt)
         if dr is None: return None
-        
         return self._superdot(dr, rhs)
 
     def dr_wrt(self, wrt, reverse_mode=False):
@@ -754,30 +754,47 @@ class Ch(object):
     ########################################################
     # Visualization
 
-    def show_tree(self, cachelim=np.inf):
+    def show_tree(self, cachelim=np.inf, maxchildren=None):
+        from hashlib import md5 
         """Cachelim is in Mb. For any cached jacobians above cachelim, they are also added to the graph. """
         
         import tempfile
         import subprocess
+        
+        done_nodes = set()
         def string_for(self, my_name):
+            done_nodes.add(id(self))
+            
             if hasattr(self, 'label'):
                 my_name = self.label
-            my_name = '%s (%s)' % (my_name, str(self.__class__.__name__))
+            
+            if str(self.__class__.__name__) == 'Ch':
+                my_name = '%s %s' % (my_name, str(self.shape))
+            else:
+                my_name = '%s (%s)' % (my_name, str(self.__class__.__name__))
+                
+            col = '#%s' % md5(str(id(self))).hexdigest()[:6]
+                
             result = []
             if not hasattr(self, 'dterms'):
                 return result
-            for dterm in self.dterms:
+            
+            src = 'aaa%d' % (id(self))
+            result += ['%s [label="%s", color="%s"];' % (src, my_name, col)]                
+                
+            for dterm in self.dterms[:maxchildren]: # limit to only few last members
                 if hasattr(self, dterm):
                     dtval = getattr(self, dterm)
                     if hasattr(dtval, 'dterms') or hasattr(dtval, 'terms'):
-                        child_label = getattr(dtval, 'label') if hasattr(dtval, 'label') else dterm
-                        child_label = '%s (%s)' % (child_label, str(dtval.__class__.__name__))
-                        src = 'aaa%d' % (id(self))
+#                        child_label = getattr(dtval, 'label') if hasattr(dtval, 'label') else dterm
+#                        child_label = '%s (%s)' % (child_label, str(dtval.__class__.__name__))
+                        
                         dst = 'aaa%d' % (id(dtval))
-                        result += ['%s -> %s;' % (src, dst)]
-                        result += ['%s [label="%s"];' % (src, my_name)]
-                        result += ['%s [label="%s"];' % (dst, child_label)]
-                        result += string_for(getattr(self, dterm), dterm)
+                        result += ['%s -> %s [color="%s"];' % (src, dst, col)]
+#                        result += ['%s [label="%s"];' % (dst, child_label)]
+                        
+                        if id(dterm) not in done_nodes:
+                            result += string_for(getattr(self, dterm), dterm)
 
             if cachelim != np.inf and hasattr(self, '_cache') and 'drs' in self._cache:
                 import cPickle as pickle
@@ -1032,16 +1049,16 @@ def main():
     x30 = Ch(30)
     
     tmp = ChLambda(lambda x, y, z: Ch(1) + Ch(2) * Ch(3) + 4)
-    print tmp.dr_wrt(tmp.x)
+    print (tmp.dr_wrt(tmp.x))
     import pdb; pdb.set_trace()
     #a(b(c(d(e(f),g),h)))
     
     blah = tst(x10, x20, x30)
     
-    print blah.r
+    print (blah.r)
 
 
-    print foo
+    print (foo)
     
     import pdb; pdb.set_trace()
     
